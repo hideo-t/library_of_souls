@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>魂の図書館 ― あなたの中の物語を探せ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;700;900&family=Shippori+Mincho:wght@400;600;800&family=Kiwi+Maru:wght@300;400;500&family=Yuji+Boku&display=swap" rel="stylesheet">
+<style>
+:root {
+  --parchment: #F5E6C8;
+  --parchment-dark: #E8D5AB;
+  --ink: #3B2F2F;
+  --ink-light: #6B5B4B;
+  --gold: #C9A84C;
+  --gold-bright: #E8C95A;
+  --fire: #E85D4A;
+  --root: #5BA37A;
+  --wind: #4A8DB7;
+  --water: #6BB5A0;
+  --light: #E8C44A;
+  --cover: #8B2500;
+  --cover-dark: #5C1A00;
+  --spine: #6B1B00;
+  --page-shadow: rgba(59, 47, 47, 0.15);
+  --transition-page: 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: #2A1F1A;
+  font-family: 'Shippori Mincho', serif;
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ===== BOOK CONTAINER ===== */
+.book-world {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 40%, #3D2B1F 0%, #1A110C 100%);
+  perspective: 1200px;
+}
+
+.book-world::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== SCREENS ===== */
+.screen {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+  z-index: 1;
+}
+
+.screen.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ===== COVER SCREEN ===== */
+.cover-screen {
+  justify-content: center;
+  padding: 24px;
+}
+
+.book-cover {
+  width: min(90vw, 380px);
+  aspect-ratio: 3/4;
+  background: linear-gradient(135deg, var(--cover) 0%, var(--cover-dark) 100%);
+  border-radius: 4px 16px 16px 4px;
+  position: relative;
+  box-shadow:
+    -4px 0 0 var(--spine),
+    -6px 2px 0 rgba(0,0,0,0.3),
+    0 8px 32px rgba(0,0,0,0.5),
+    inset 0 0 60px rgba(0,0,0,0.3);
+  cursor: pointer;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  animation: bookFloat 4s ease-in-out infinite;
+  overflow: hidden;
+}
+
+.book-cover:hover, .book-cover:active {
+  transform: scale(1.02) rotateY(-3deg);
+  box-shadow:
+    -4px 0 0 var(--spine),
+    -6px 2px 0 rgba(0,0,0,0.3),
+    0 12px 48px rgba(0,0,0,0.6),
+    inset 0 0 60px rgba(0,0,0,0.3);
+}
+
+@keyframes bookFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.cover-ornament {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border: 3px solid var(--gold);
+  margin: 16px;
+  border-radius: 2px 12px 12px 2px;
+  opacity: 0.7;
+}
+
+.cover-ornament::before, .cover-ornament::after {
+  content: '✦';
+  position: absolute;
+  color: var(--gold);
+  font-size: 18px;
+}
+
+.cover-ornament::before { top: -10px; left: 50%; transform: translateX(-50%); }
+.cover-ornament::after { bottom: -10px; left: 50%; transform: translateX(-50%); }
+
+.cover-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  width: 80%;
+}
+
+.cover-icon {
+  font-size: 52px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+  animation: iconGlow 3s ease-in-out infinite;
+}
+
+@keyframes iconGlow {
+  0%, 100% { filter: drop-shadow(0 2px 8px rgba(201, 168, 76, 0.3)); }
+  50% { filter: drop-shadow(0 2px 16px rgba(201, 168, 76, 0.6)); }
+}
+
+.cover-title {
+  font-family: 'Zen Old Mincho', serif;
+  font-weight: 900;
+  font-size: 28px;
+  color: var(--gold-bright);
+  line-height: 1.5;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  margin-bottom: 12px;
+  letter-spacing: 0.1em;
+}
+
+.cover-subtitle {
+  font-family: 'Kiwi Maru', serif;
+  font-size: 13px;
+  color: rgba(232, 201, 90, 0.7);
+  line-height: 1.8;
+  letter-spacing: 0.05em;
+}
+
+.cover-tap {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Kiwi Maru', serif;
+  font-size: 12px;
+  color: rgba(232, 201, 90, 0.5);
+  animation: tapPulse 2s ease-in-out infinite;
+  letter-spacing: 0.1em;
+}
+
+@keyframes tapPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.9; }
+}
+
+/* ===== INTRO SCREEN ===== */
+.page-screen {
+  background: var(--parchment);
+  padding: 0;
+}
+
+.page-inner {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 32px 24px;
+  position: relative;
+}
+
+.page-inner::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.06'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page-inner > * { position: relative; z-index: 1; }
+
+.page-edge {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(to right, rgba(0,0,0,0.12), transparent);
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* ===== INTRO ===== */
+.intro-illustration {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 4/3;
+  margin: 0 auto 24px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2D1B4E 0%, #1A3A5C 40%, #0D2B45 100%);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+}
+
+.intro-illustration::before {
+  content: '📚';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 64px;
+  animation: bookFloat 4s ease-in-out infinite;
+}
+
+.intro-illustration .stars {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+
+.star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #FFF;
+  border-radius: 50%;
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.chapter-num {
+  font-family: 'Yuji Boku', serif;
+  font-size: 14px;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 8px;
+  letter-spacing: 0.2em;
+}
+
+.page-title {
+  font-family: 'Zen Old Mincho', serif;
+  font-weight: 900;
+  font-size: 22px;
+  text-align: center;
+  color: var(--ink);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.page-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: var(--gold);
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.page-divider::before, .page-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+}
+
+.narrative-text {
+  font-family: 'Kiwi Maru', serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 2;
+  color: var(--ink-light);
+  text-align: center;
+  margin-bottom: 24px;
+  letter-spacing: 0.02em;
+}
+
+.narrative-text .highlight {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ===== STORY ILLUSTRATION ===== */
+.story-illustration {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 16/10;
+  margin: 0 auto 20px;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.story-illustration .scene-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+
+.story-illustration .scene-emoji {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 48px;
+}
+
+/* ===== CHOICES ===== */
+.choices-container {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 32px;
+}
+
+.choice-btn {
+  width: 100%;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 2px solid rgba(201, 168, 76, 0.3);
+  border-radius: 12px;
+  font-family: 'Kiwi Maru', serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.choice-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.choice-btn:hover::before, .choice-btn:active::before {
+  opacity: 1;
+}
+
+.choice-btn:active {
+  transform: scale(0.98);
+  border-color: var(--gold);
+  box-shadow: 0 0 16px rgba(201, 168, 76, 0.2);
+}
+
+.choice-letter {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background: var(--gold);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Zen Old Mincho', serif;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.choice-btn.selected {
+  background: rgba(201, 168, 76, 0.15);
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(201, 168, 76, 0.15);
+}
+
+/* ===== FEEDBACK ===== */
+.feedback-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(245, 230, 200, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.feedback-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.feedback-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  animation: feedbackPop 0.5s ease;
+}
+
+@keyframes feedbackPop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.feedback-text {
+  font-family: 'Kiwi Maru', serif;
+  font-size: 15px;
+  line-height: 2;
+  color: var(--ink-light);
+  text-align: center;
+  max-width: 300px;
+  margin-bottom: 32px;
+}
+
+.next-btn {
+  padding: 14px 48px;
+  background: var(--gold);
+  color: white;
+  border: none;
+  border-radius: 28px;
+  font-family: 'Kiwi Maru', serif;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(201, 168, 76, 0.3);
+}
+
+.next-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(201, 168, 76, 0.3);
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(0,0,0,0.05);
+  z-index: 50;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  transition: width 0.6s ease;
+  border-radius: 0 2px 2px 0;
+}
+
+/* ===== START BUTTON ===== */
+.start-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 40px;
+  background: linear-gradient(135deg, var(--cover), var(--cover-dark));
+  color: var(--gold-bright);
+  border: 2px solid var(--gold);
+  border-radius: 28px;
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(139, 37, 0, 0.3);
+  letter-spacing: 0.1em;
+}
+
+.start-btn:active {
+  transform: scale(0.95);
+}
+
+/* ===== RESULT SCREEN ===== */
+.result-inner {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 40px 24px 60px;
+  background: var(--parchment);
+  position: relative;
+}
+
+.result-inner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 200px;
+  background: linear-gradient(to bottom, rgba(139, 37, 0, 0.08), transparent);
+  pointer-events: none;
+}
+
+.result-inner > * { position: relative; z-index: 1; }
+
+.result-header-icon {
+  font-size: 56px;
+  text-align: center;
+  margin-bottom: 16px;
+  animation: feedbackPop 0.8s ease;
+}
+
+.result-label {
+  font-family: 'Yuji Boku', serif;
+  font-size: 13px;
+  color: var(--gold);
+  text-align: center;
+  letter-spacing: 0.3em;
+  margin-bottom: 8px;
+}
+
+.result-type-name {
+  font-family: 'Zen Old Mincho', serif;
+  font-weight: 900;
+  font-size: 24px;
+  text-align: center;
+  color: var(--ink);
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.result-type-en {
+  font-family: 'Kiwi Maru', serif;
+  font-size: 12px;
+  color: var(--ink-light);
+  text-align: center;
+  margin-bottom: 24px;
+  letter-spacing: 0.05em;
+}
+
+/* Radar Chart */
+.radar-container {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto 36px;
+  padding: 8px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 20px;
+  border: 1px solid rgba(201, 168, 76, 0.15);
+}
+
+.radar-container svg {
+  width: 100%;
+  height: auto;
+}
+
+/* Score Bars */
+.score-section {
+  margin-bottom: 28px;
+}
+
+.score-section-title {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 16px;
+  color: var(--ink);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.score-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.score-icon { font-size: 20px; flex-shrink: 0; }
+.score-name {
+  font-family: 'Kiwi Maru', serif;
+  font-size: 13px;
+  color: var(--ink-light);
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.score-bar-bg {
+  flex: 1;
+  height: 14px;
+  background: rgba(0,0,0,0.06);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 7px;
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 0;
+}
+
+.score-value {
+  font-family: 'Kiwi Maru', serif;
+  font-size: 12px;
+  color: var(--ink-light);
+  width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Type Description */
+.type-description {
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.type-desc-text {
+  font-family: 'Kiwi Maru', serif;
+  font-size: 14px;
+  line-height: 2;
+  color: var(--ink-light);
+  text-align: center;
+}
+
+.type-traits {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.trait-group-title {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 14px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.trait-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.trait-tag {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-family: 'Kiwi Maru', serif;
+  font-size: 12px;
+}
+
+.trait-tag.strength {
+  background: rgba(91, 163, 122, 0.15);
+  color: var(--root);
+  border: 1px solid rgba(91, 163, 122, 0.3);
+}
+
+.trait-tag.weakness {
+  background: rgba(232, 93, 74, 0.1);
+  color: var(--fire);
+  border: 1px solid rgba(232, 93, 74, 0.2);
+}
+
+/* AI Advice */
+.advice-section {
+  background: linear-gradient(135deg, rgba(74, 141, 183, 0.08), rgba(107, 181, 160, 0.08));
+  border: 1px solid rgba(74, 141, 183, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.advice-title {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 15px;
+  color: var(--wind);
+  margin-bottom: 12px;
+}
+
+.advice-text {
+  font-family: 'Kiwi Maru', serif;
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--ink-light);
+}
+
+/* Archetype */
+.archetype-badge {
+  display: inline-block;
+  padding: 6px 20px;
+  background: rgba(201, 168, 76, 0.12);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  border-radius: 20px;
+  font-family: 'Yuji Boku', serif;
+  font-size: 13px;
+  color: var(--gold);
+  margin-bottom: 20px;
+}
+
+/* Retry */
+.retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 36px;
+  background: transparent;
+  color: var(--ink-light);
+  border: 2px solid rgba(59, 47, 47, 0.2);
+  border-radius: 28px;
+  font-family: 'Kiwi Maru', serif;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 8px;
+}
+
+.retry-btn:active {
+  transform: scale(0.95);
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+/* ===== PAGE TRANSITION ===== */
+.page-turn-enter {
+  animation: pageTurnIn 0.7s ease forwards;
+}
+
+@keyframes pageTurnIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ===== LOADING SCREEN ===== */
+.loading-screen {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--parchment);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.loading-screen.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.loading-book {
+  font-size: 48px;
+  animation: loadingFlip 1.5s ease-in-out infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes loadingFlip {
+  0%, 100% { transform: rotateY(0deg); }
+  50% { transform: rotateY(180deg); }
+}
+
+.loading-text {
+  font-family: 'Kiwi Maru', serif;
+  font-size: 14px;
+  color: var(--ink-light);
+  animation: tapPulse 2s ease-in-out infinite;
+}
+
+/* ===== SHARE CARD ===== */
+.share-section {
+  text-align: center;
+  padding: 20px 0 40px;
+}
+
+.share-card {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto 20px;
+  background: linear-gradient(135deg, var(--cover), var(--cover-dark));
+  border-radius: 16px;
+  padding: 28px 24px;
+  color: var(--gold-bright);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.share-card-title {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  opacity: 0.7;
+  margin-bottom: 8px;
+}
+
+.share-card-type {
+  font-family: 'Zen Old Mincho', serif;
+  font-weight: 900;
+  font-size: 20px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.share-card-params {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  font-family: 'Kiwi Maru', serif;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* Animations */
+.fade-in { animation: fadeIn 0.6s ease forwards; }
+.fade-in-up { animation: fadeInUp 0.6s ease forwards; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.delay-1 { animation-delay: 0.1s; opacity: 0; }
+.delay-2 { animation-delay: 0.2s; opacity: 0; }
+.delay-3 { animation-delay: 0.3s; opacity: 0; }
+.delay-4 { animation-delay: 0.4s; opacity: 0; }
+.delay-5 { animation-delay: 0.5s; opacity: 0; }
+.delay-6 { animation-delay: 0.6s; opacity: 0; }
+</style>
+</head>
+<body>
+
+<div class="book-world" id="app">
+
+  <!-- COVER SCREEN -->
+  <div class="screen cover-screen active" id="coverScreen">
+    <div class="book-cover" onclick="openBook()">
+      <div class="cover-ornament"></div>
+      <div class="cover-content">
+        <div class="cover-icon">📖</div>
+        <div class="cover-title">魂の図書館</div>
+        <div class="cover-subtitle">
+          あなたの中の<br>物語を探せ
+        </div>
+      </div>
+      <div class="cover-tap">― タップして開く ―</div>
+    </div>
+  </div>
+
+  <!-- INTRO SCREEN -->
+  <div class="screen page-screen" id="introScreen">
+    <div class="page-edge"></div>
+    <div class="page-inner">
+      <div class="intro-illustration">
+        <div class="stars" id="introStars"></div>
+      </div>
+
+      <div class="chapter-num">― 序章 ―</div>
+      <div class="page-title">迷子の物語の主人公</div>
+      <div class="page-divider">✦</div>
+
+      <div class="narrative-text">
+        ある日、あなたは<br>
+        古い<span class="highlight">図書館</span>で目を覚ましました。<br><br>
+        目の前には、白髪の<span class="highlight">司書</span>が<br>
+        優しく微笑んでいます。<br><br>
+        「ようこそ、<span class="highlight">魂の図書館</span>へ。<br>
+        あなたはどうやら、<br>
+        自分の物語を見失ったようですね。」<br><br>
+        「これから<span class="highlight">10の昔話</span>を巡り、<br>
+        あなたの中に眠る<br>
+        <span class="highlight">本当の物語</span>を<br>
+        一緒に探しましょう。」
+      </div>
+
+      <div style="text-align: center; padding-bottom: 24px;">
+        <button class="start-btn" onclick="startDiagnosis()">
+          物語を始める ✦
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STORY SCREEN -->
+  <div class="screen page-screen" id="storyScreen">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="page-edge"></div>
+    <div class="page-inner" id="storyContent">
+      <!-- Dynamically rendered -->
+    </div>
+  </div>
+
+  <!-- FEEDBACK OVERLAY -->
+  <div class="feedback-overlay" id="feedbackOverlay">
+    <div class="feedback-icon" id="feedbackIcon">✨</div>
+    <div class="feedback-text" id="feedbackText"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextStory()">次の物語へ ▸</button>
+  </div>
+
+  <!-- LOADING SCREEN -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-book">📖</div>
+    <div class="loading-text">あなたの物語を紐解いています…</div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="screen page-screen" id="resultScreen">
+    <div class="page-edge"></div>
+    <div class="result-inner" id="resultContent">
+      <!-- Dynamically rendered -->
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===== DATA =====
+const STORIES = [
+  {
+    number: 1,
+    title: '旅立ちの朝',
+    theme: '安全圏 vs 未知への欲求',
+    emoji: '🌅',
+    bgGradient: 'linear-gradient(135deg, #FF9A56 0%, #FF6B6B 50%, #C44569 100%)',
+    narrative: '夜明け前に目が覚めました。\n今日は長い旅の始まりの日。\n窓の外には、まだ見ぬ世界が\n朝霧の向こうに広がっています。\n\nあなたはどのように旅立ちますか？',
+    choices: [
+      { letter: 'A', text: '準備を完璧にしてから出発する', feedback: '慎重な選択です。確実な一歩が成功への近道かもしれません。', icon: '🎒', weights: {fire:1,root:6,wind:2,water:1,light:0} },
+      { letter: 'B', text: '直感で今すぐ飛び出す', feedback: '冒険心に溢れた選択です。未知への一歩が新しい世界を開くでしょう。', icon: '🏃', weights: {fire:6,root:0,wind:1,water:2,light:1} },
+      { letter: 'C', text: '信頼できる仲間を誘ってから出発する', feedback: '協調性のある選択です。仲間との絆が心強い支えになるでしょう。', icon: '🤝', weights: {fire:2,root:3,wind:1,water:4,light:0} }
+    ]
+  },
+  {
+    number: 2,
+    title: '魔法のアイテム選択',
+    theme: '価値観の優先順位',
+    emoji: '✨',
+    bgGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+    narrative: '古代の祠にたどり着くと、\n3つの魔法のアイテムが\n淡い光を放っています。\n\nしかし、持てるのはひとつだけ。\nあなたはどれを選びますか？',
+    choices: [
+      { letter: 'A', text: '未来を見通す「予見の鏡」', feedback: '先見の明を持つ選択です。未来への洞察が力になるでしょう。', icon: '🔮', weights: {fire:1,root:2,wind:5,water:1,light:1} },
+      { letter: 'B', text: 'あらゆる傷を癒す「命の薬」', feedback: '慈愛に満ちた選択です。癒しの力が多くのものを救うでしょう。', icon: '💊', weights: {fire:0,root:2,wind:1,water:6,light:1} },
+      { letter: 'C', text: '真実だけを語る「誠実の笛」', feedback: '誠実さを重んじる選択です。真実の力が道を切り開くでしょう。', icon: '🎵', weights: {fire:2,root:4,wind:2,water:1,light:1} }
+    ]
+  },
+  {
+    number: 3,
+    title: '迷いの森の分かれ道',
+    theme: '意思決定スタイル',
+    emoji: '🌲',
+    bgGradient: 'linear-gradient(135deg, #11998e 0%, #2d6a4f 50%, #1b4332 100%)',
+    narrative: '深い森の中で\n三つの道が分かれています。\n\n古びた道標は苔むして、\n文字が読めません。\n\nあなたはどうやって\n進む道を決めますか？',
+    choices: [
+      { letter: 'A', text: '古びた地図を頼りに進む', feedback: '確実性を重視する選択です。経験と知識が確かな道標になります。', icon: '🗺️', weights: {fire:0,root:5,wind:3,water:1,light:1} },
+      { letter: 'B', text: '直感で道を選ぶ', feedback: '内なる声に従う選択です。直感が思わぬ近道を示すかもしれません。', icon: '💫', weights: {fire:4,root:1,wind:1,water:3,light:1} },
+      { letter: 'C', text: '高い木に登って全体を見渡す', feedback: '戦略的な選択です。俯瞰的な視点が最適解を見つけます。', icon: '🌳', weights: {fire:2,root:2,wind:4,water:1,light:1} }
+    ]
+  },
+  {
+    number: 4,
+    title: '困っている森の動物',
+    theme: '他者関与の姿勢',
+    emoji: '🦊',
+    bgGradient: 'linear-gradient(135deg, #F2994A 0%, #F2C94C 50%, #86E3CE 100%)',
+    narrative: '道の途中で、\n小さな狐が罠にかかって\n怯えています。\n\n傷ついた目が\nあなたを見上げています。\n\nあなたはどうしますか？',
+    choices: [
+      { letter: 'A', text: 'すぐに手を差し伸べて助ける', feedback: '共感力に富む選択です。即座の行動が危機を救うでしょう。', icon: '🤲', weights: {fire:2,root:1,wind:1,water:5,light:1} },
+      { letter: 'B', text: 'まず状況を観察して原因を探る', feedback: '分析的で慎重な選択です。根本的な解決につながるでしょう。', icon: '🔍', weights: {fire:1,root:3,wind:4,water:1,light:1} },
+      { letter: 'C', text: '自分も学べる方法で関わる', feedback: '成長志向の選択です。相互利益が持続的な関係を築きます。', icon: '📚', weights: {fire:3,root:2,wind:2,water:1,light:2} }
+    ]
+  },
+  {
+    number: 5,
+    title: '古い城の秘密の部屋',
+    theme: '好奇心と警戒心',
+    emoji: '🏰',
+    bgGradient: 'linear-gradient(135deg, #4A4E69 0%, #22223B 50%, #2A2D43 100%)',
+    narrative: '廃墟の城を探索していると、\n壁の奥に隠された\n小さな扉を発見しました。\n\n扉の隙間から\n不思議な光が漏れています。\n\nあなたはどうしますか？',
+    choices: [
+      { letter: 'A', text: '興奮してすぐに入ってみる', feedback: '好奇心旺盛な選択です。新しい発見が待っているかもしれません。', icon: '🚪', weights: {fire:6,root:0,wind:2,water:1,light:1} },
+      { letter: 'B', text: '周囲を警戒しながら様子をうかがう', feedback: '慎重で賢明な選択です。リスク管理が安全を確保します。', icon: '👀', weights: {fire:1,root:5,wind:2,water:1,light:1} },
+      { letter: 'C', text: '仲間に報告して一緒に調べる', feedback: '協調的な選択です。共有された冒険はより豊かな経験になります。', icon: '📢', weights: {fire:2,root:2,wind:1,water:4,light:1} }
+    ]
+  },
+  {
+    number: 6,
+    title: '竜との対話',
+    theme: '対立へのアプローチ',
+    emoji: '🐉',
+    bgGradient: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 40%, #2c3e50 100%)',
+    narrative: '山の頂に住む\n古い竜と出会いました。\n\n竜は領域を侵されたと怒り、\n炎の息を吹く構えです。\n\nあなたはどう対応しますか？',
+    choices: [
+      { letter: 'A', text: '戦う準備を整える', feedback: '勇敢で決断力のある選択です。時には戦いが必要なこともあります。', icon: '⚔️', weights: {fire:5,root:2,wind:1,water:1,light:1} },
+      { letter: 'B', text: '交渉して共存の道を探る', feedback: '平和的な選択です。対話が新たな可能性を開きます。', icon: '🕊️', weights: {fire:1,root:3,wind:3,water:2,light:1} },
+      { letter: 'C', text: 'まず竜の立場を理解しようとする', feedback: '共感的で深い選択です。真の理解が根本解決をもたらします。', icon: '💭', weights: {fire:1,root:1,wind:2,water:4,light:2} }
+    ]
+  },
+  {
+    number: 7,
+    title: '時間の砂時計',
+    theme: '時間意識',
+    emoji: '⏳',
+    bgGradient: 'linear-gradient(135deg, #D4A574 0%, #C49B68 40%, #8B6914 100%)',
+    narrative: '不思議な砂時計を見つけました。\nこの砂時計は、\n時間を操る力を持っています。\n\nただし使えるのは一度だけ。\n\nあなたはどう使いますか？',
+    choices: [
+      { letter: 'A', text: '過去の失敗をやり直す', feedback: '過去と向き合う選択です。修正が新たな出発点になります。', icon: '⏪', weights: {fire:1,root:4,wind:2,water:2,light:1} },
+      { letter: 'B', text: '現在の一瞬を最大に生きる', feedback: '現在中心の選択です。今この瞬間が全てを変える力を持ちます。', icon: '✨', weights: {fire:4,root:1,wind:1,water:3,light:1} },
+      { letter: 'C', text: '未来のために時間を貯める', feedback: '未来志向の選択です。計画的な準備が豊かな未来を築きます。', icon: '⏩', weights: {fire:1,root:3,wind:4,water:1,light:1} }
+    ]
+  },
+  {
+    number: 8,
+    title: '祭りの夜',
+    theme: '社会性',
+    emoji: '🎪',
+    bgGradient: 'linear-gradient(135deg, #FF6B6B 0%, #FFA07A 30%, #FFD700 70%, #FFA500 100%)',
+    narrative: '旅の途中、\n村の大きな祭りに出会いました。\n\n音楽と笑い声が\n夜空に響いています。\n\nあなたはどう過ごしますか？',
+    choices: [
+      { letter: 'A', text: '祭りの中心で踊り楽しむ', feedback: '外向的で活発な選択です。エネルギーが周りを明るくします。', icon: '💃', weights: {fire:5,root:1,wind:1,water:2,light:1} },
+      { letter: 'B', text: '裏方で料理や準備を手伝う', feedback: '献身的で控えめな選択です。縁の下の力持ちが全体を支えます。', icon: '🍳', weights: {fire:1,root:4,wind:1,water:3,light:1} },
+      { letter: 'C', text: '少し離れた丘から眺める', feedback: '内省的で観察的な選択です。距離が新たな気づきをもたらします。', icon: '🌙', weights: {fire:1,root:2,wind:4,water:1,light:2} }
+    ]
+  },
+  {
+    number: 9,
+    title: '伝説の書物の発見',
+    theme: '知識への向き合い方',
+    emoji: '📜',
+    bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)',
+    narrative: '旅の終盤、\n伝説の古い書物を見つけました。\n\nその中には、\nこの世界の真理が\n記されているといいます。\n\nあなたはどうしますか？',
+    choices: [
+      { letter: 'A', text: '自分だけの知識として大切に保管する', feedback: '個人的な価値を重視する選択です。深い専門性が強みになります。', icon: '🔒', weights: {fire:2,root:4,wind:2,water:1,light:1} },
+      { letter: 'B', text: '皆と共有して一緒に学ぶ', feedback: '共有的で開かれた選択です。共有が新たな知恵を生み出します。', icon: '📖', weights: {fire:1,root:2,wind:1,water:5,light:1} },
+      { letter: 'C', text: '実用的な応用方法を研究する', feedback: '実践的な選択です。知識の活用が現実を変える力になります。', icon: '🔬', weights: {fire:3,root:1,wind:4,water:1,light:1} }
+    ]
+  },
+  {
+    number: 10,
+    title: '物語の結末',
+    theme: '完結の形',
+    emoji: '🌟',
+    bgGradient: 'linear-gradient(135deg, #FFD700 0%, #FFA500 30%, #FF6B6B 60%, #C44569 100%)',
+    narrative: '長い旅が終わりを迎えます。\n\n振り返れば、\n数え切れない出会いと\n別れがありました。\n\nあなたはこの物語を\nどう終わらせますか？',
+    choices: [
+      { letter: 'A', text: '英雄として故郷に帰還する', feedback: '栄光と承認を求める選択です。達成感が次の活力になります。', icon: '🏠', weights: {fire:4,root:3,wind:1,water:1,light:1} },
+      { letter: 'B', text: '新たな冒険へすぐに出発する', feedback: '終わりなき探求の選択です。旅そのものが目的になります。', icon: '🚀', weights: {fire:5,root:0,wind:2,water:1,light:2} },
+      { letter: 'C', text: '平凡だが平和な日常を選ぶ', feedback: '平穏と安定を選ぶ選択です。小さな幸せの積み重ねが豊かさになります。', icon: '🌸', weights: {fire:0,root:6,wind:1,water:2,light:1} }
+    ]
+  }
+];
+
+const TYPES = {
+  fire_wind: { nameJa: '自由な探検家', nameEn: 'Free Explorer', icon: '🔥🌪️', desc: '好奇心と知性を武器に、常に新しい地平を目指す冒険者。固定観念に縛られず、自由な発想で世界を切り拓きます。', strengths: ['創造的', '適応力が高い', '学習意欲が強い', 'オープンマインド'], weaknesses: ['飽きやすい', '継続性に欠ける', '深みに欠けることがある'], archetype: 'トリックスター／探求者', advice: 'AIを「冒険の相棒」として扱いましょう。新しいアイデアの共創者として活用してください。' },
+  fire_water: { nameJa: '情熱的共感者', nameEn: 'Passionate Empath', icon: '🔥💧', desc: '情熱と共感力を併せ持ち、人々の心を動かすカリスマ。感情的に深く関わりながらも、前向きなエネルギーを伝播させます。', strengths: ['情熱的', '共感力が高い', '人を鼓舞できる', '感情的深度'], weaknesses: ['感情的消耗が大きい', '客観性に欠ける', '衝動的'], archetype: '恋人／癒し手', advice: 'AIを「感情的なサウンドボード」として使いましょう。情熱的なアイデアを客観的に振り返る鏡として活用してください。' },
+  fire_root: { nameJa: '挑戦する守護者', nameEn: 'Challenging Guardian', icon: '🔥🌿', desc: '伝統と安定を基盤としつつ、現状に挑戦する改革者。変化をもたらしながらも、基盤をしっかり守るバランス感覚を持ちます。', strengths: ['現実的', '実行力がある', '責任感が強い', '持続的'], weaknesses: ['頑固', '柔軟性に欠ける', '革新性不足'], archetype: '英雄／守護者', advice: 'AIを「信頼できる参謀」として活用しましょう。計画の実行を支えるツールとして最適です。' },
+  fire_light: { nameJa: '革命的な夢想家', nameEn: 'Revolutionary Dreamer', icon: '🔥✨', desc: '理想と情熱を武器に、現状を打破するビジョナリー。高い理想を掲げ、情熱的に変革を推進します。', strengths: ['理想主義的', '情熱的', '変革力がある', 'インスピレーション豊か'], weaknesses: ['現実離れ', '持続性に欠ける', '燃え尽きやすい'], archetype: '預言者／革命家', advice: 'AIを「理想と現実の橋渡し役」として使いましょう。ビジョンを具体的なステップに落とし込む支援を求めてください。' },
+  root_fire: { nameJa: '堅実な開拓者', nameEn: 'Practical Pioneer', icon: '🌿🔥', desc: '安定を確保しながらも、確実に前進する実践家。リスクを計算した上で、着実に新しい領域を開拓します。', strengths: ['現実的', '計画性がある', '持続的', '実行力'], weaknesses: ['冒険心が制限される', '変化に消極的', 'スピード不足'], archetype: '開拓者／実務家', advice: 'AIを「効率化の達人」として使いましょう。ルーチンワークを任せ、本質的な判断に集中してください。' },
+  root_water: { nameJa: '温かな保護者', nameEn: 'Warm Protector', icon: '🌿💧', desc: '安定と温かさで周りを包み込む保護者。伝統や絆を大切にし、情緒的に安全な環境を作り出します。', strengths: ['信頼できる', '献身的', '情緒的に安定', '協調的'], weaknesses: ['自己犠牲的', '変化に抵抗', '自己主張が弱い'], archetype: '養育者／保護者', advice: 'AIを「信頼できる執事」として扱いましょう。日常の煩雑な作業を任せ、大切な人との時間を作りましょう。' },
+  root_wind: { nameJa: '体系的な管理者', nameEn: 'Systematic Manager', icon: '🌿🌪️', desc: '秩序と論理を重んじ、効率的なシステムを構築する管理者。伝統的な知恵と現代的な合理性を融合させます。', strengths: ['組織的', '論理的', '効率的', '信頼性が高い'], weaknesses: ['柔軟性に欠ける', '人間味に欠ける', '創造性不足'], archetype: '管理者／建築家', advice: 'AIを「データ分析のパートナー」として活用しましょう。システム改善の提案を求めてみてください。' },
+  root_light: { nameJa: '伝統的哲学者', nameEn: 'Traditional Philosopher', icon: '🌿✨', desc: '伝統の中に深い知恵を見出し、現代に活かす哲学者。古き良き価値観を守りつつ、精神的成長を追求します。', strengths: ['知恵がある', '思慮深い', '伝統を重んじる', '精神的'], weaknesses: ['現実離れ', '変化に抵抗', '閉鎖的'], archetype: '賢者／哲学者', advice: 'AIを「知恵の蔵」として使いましょう。古今東西の知恵を比較・統合する対話相手として最適です。' },
+  wind_fire: { nameJa: '知的冒険家', nameEn: 'Intellectual Adventurer', icon: '🌪️🔥', desc: '知性と好奇心を武器に、思想的冒険を楽しむ探求者。理論と実践を結びつけ、新しいパラダイムを創造します。', strengths: ['知的', '創造的', '分析的', '適応力がある'], weaknesses: ['感情的深度に欠ける', '持続性不足', '人間関係が浅い'], archetype: '発明家／先駆者', advice: 'AIを「思考実験の相棒」として使いましょう。仮説検証や理論展開のパートナーとして活用してください。' },
+  wind_water: { nameJa: '分析的な仲介者', nameEn: 'Analytical Mediator', icon: '🌪️💧', desc: '論理と共感のバランスを取り、調和をもたらす仲介者。客観性を持ちながらも、人間関係の機微を理解します。', strengths: ['公平', '分析的', '共感力がある', '調整力'], weaknesses: ['決断力に欠ける', '感情的距離を取りすぎる', '主体性不足'], archetype: '調停者／観察者', advice: 'AIを「分析と共感の橋渡し役」として使いましょう。データに基づいた人間関係のアドバイスを求めてみてください。' },
+  wind_root: { nameJa: '戦略的計画者', nameEn: 'Strategic Planner', icon: '🌪️🌿', desc: '自由と安定のバランスを計算し、長期的な計画を立てる戦略家。現実的制約の中で最大の自由を設計します。', strengths: ['戦略的', '現実的', '計画性がある', '効率的'], weaknesses: ['冒険心が不足', '柔軟性に欠ける', '楽しむことを忘れる'], archetype: '戦略家／設計者', advice: 'AIを「戦略シミュレーター」として使いましょう。複数のシナリオを比較検討する支援を求めてください。' },
+  wind_light: { nameJa: '真理の探究者', nameEn: 'Truth Seeker', icon: '🌪️✨', desc: '知性と理想を追求し、絶対的な真理を探求する哲学者。論理的思考と精神的探求を統合させます。', strengths: ['哲学的', '知的', '探究心が強い', '正直'], weaknesses: ['現実的でない', '孤独', '実践性に欠ける'], archetype: '探究者／神秘家', advice: 'AIを「哲学的対話者」として扱いましょう。抽象的な概念を具体化するパートナーとして活用してください。' },
+  water_fire: { nameJa: '共感のリーダー', nameEn: 'Empathetic Leader', icon: '💧🔥', desc: '感情的な深さと情熱で人々を導くリーダー。共感力を持ちながらも、前向きなエネルギーで集団を動かします。', strengths: ['共感力が高い', '情熱的', '人を動かせる', '感情的深度'], weaknesses: ['感情的消耗', '客観性不足', '衝動的'], archetype: 'カリスマ／導き手', advice: 'AIを「リーダーシップコーチ」として使いましょう。感情と論理のバランスを取る助言を求めてください。' },
+  water_root: { nameJa: '情緒的安定剤', nameEn: 'Emotional Stabilizer', icon: '💧🌿', desc: '情緒的な安定感で周囲を支える存在。温かさと一貫性で、安全な感情的環境を提供します。', strengths: ['情緒的に安定', '信頼できる', '献身的', '協調的'], weaknesses: ['自己犠牲的', '自己主張が弱い', '冒険心不足'], archetype: '養育者／基盤', advice: 'AIを「自分時間の確保ツール」として使いましょう。他者のサポートと自分のケアのバランスを支援してもらってください。' },
+  water_wind: { nameJa: '調停する観察者', nameEn: 'Mediating Observer', icon: '💧🌪️', desc: '客観性と共感力のバランスで、人間関係を調整する観察者。感情を理解しつつ、合理的な解決策を提案します。', strengths: ['公平', '共感力がある', '分析的', '調整力'], weaknesses: ['感情的距離', '主体性不足', '決断力不足'], archetype: '観察者／仲介者', advice: 'AIを「客観的な鏡」として使いましょう。感情と論理の両面から状況を分析する支援を求めてください。' },
+  water_light: { nameJa: '癒しの導き手', nameEn: 'Healing Guide', icon: '💧✨', desc: '共感力と精神的深さで、他者の成長を促す導き手。感情的な癒しと精神的成長を支援します。', strengths: ['癒しの力がある', '共感力が高い', '精神的', '成長志向'], weaknesses: ['現実的でない', '自己犠牲的', '実践性不足'], archetype: '癒し手／霊的指導者', advice: 'AIを「内面の対話ツール」として使いましょう。自己理解と他者理解を深めるための問いかけを求めてください。' }
+};
+
+const PARAM_META = {
+  fire:  { name: '炎', icon: '🔥', color: '#E85D4A', label: '情熱・冒険' },
+  root:  { name: '根', icon: '🌿', color: '#5BA37A', label: '安定・基盤' },
+  wind:  { name: '風', icon: '🌪️', color: '#4A8DB7', label: '知性・自由' },
+  water: { name: '水', icon: '💧', color: '#6BB5A0', label: '共感・調和' },
+  light: { name: '光', icon: '✨', color: '#C9A84C', label: '理想・精神' }
+};
+
+// ===== STATE =====
+let currentStory = 0;
+let answers = [];
+let scores = { fire: 0, root: 0, wind: 0, water: 0, light: 0 };
+
+// ===== FUNCTIONS =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function openBook() {
+  const cover = document.querySelector('.book-cover');
+  cover.style.animation = 'none';
+  cover.style.transition = 'transform 0.8s ease, opacity 0.6s ease';
+  cover.style.transform = 'rotateY(-90deg) scale(0.9)';
+  cover.style.opacity = '0';
+  setTimeout(() => showScreen('introScreen'), 500);
+}
+
+function createStars() {
+  const container = document.getElementById('introStars');
+  if (!container) return;
+  for (let i = 0; i < 20; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDelay = Math.random() * 3 + 's';
+    star.style.width = (Math.random() * 3 + 1) + 'px';
+    star.style.height = star.style.width;
+    container.appendChild(star);
+  }
+}
+
+function startDiagnosis() {
+  currentStory = 0;
+  answers = [];
+  scores = { fire: 0, root: 0, wind: 0, water: 0, light: 0 };
+  showScreen('storyScreen');
+  renderStory();
+}
+
+function renderStory() {
+  const story = STORIES[currentStory];
+  const progress = ((currentStory) / STORIES.length) * 100;
+  document.getElementById('progressFill').style.width = progress + '%';
+
+  const content = document.getElementById('storyContent');
+  content.scrollTop = 0;
+  content.innerHTML = `
+    <div class="story-illustration fade-in">
+      <div class="scene-bg" style="background: ${story.bgGradient};"></div>
+      <div class="scene-emoji">${story.emoji}</div>
+    </div>
+    <div class="chapter-num fade-in-up delay-1">― 第${story.number}話 ―</div>
+    <div class="page-title fade-in-up delay-2">${story.title}</div>
+    <div class="page-divider fade-in-up delay-2">✦</div>
+    <div class="narrative-text fade-in-up delay-3">${story.narrative.replace(/\n/g, '<br>')}</div>
+    <div class="choices-container">
+      ${story.choices.map((c, i) => `
+        <button class="choice-btn fade-in-up delay-${i + 4}" onclick="selectChoice(${i})">
+          <span class="choice-letter">${c.letter}</span>
+          <span>${c.text}</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function selectChoice(index) {
+  const story = STORIES[currentStory];
+  const choice = story.choices[index];
+
+  // Update scores
+  Object.keys(choice.weights).forEach(param => {
+    scores[param] += choice.weights[param];
+  });
+
+  answers.push({
+    storyNumber: story.number,
+    choiceLetter: choice.letter,
+    choiceIndex: index
+  });
+
+  // Highlight selected
+  document.querySelectorAll('.choice-btn').forEach((btn, i) => {
+    if (i === index) btn.classList.add('selected');
+    btn.style.pointerEvents = 'none';
+  });
+
+  // Show feedback
+  setTimeout(() => {
+    const overlay = document.getElementById('feedbackOverlay');
+    document.getElementById('feedbackIcon').textContent = choice.icon;
+    document.getElementById('feedbackText').textContent = choice.feedback;
+
+    if (currentStory >= STORIES.length - 1) {
+      document.getElementById('nextBtn').textContent = '結果を見る ✦';
+    } else {
+      document.getElementById('nextBtn').textContent = '次の物語へ ▸';
+    }
+
+    overlay.classList.add('show');
+  }, 400);
+}
+
+function nextStory() {
+  document.getElementById('feedbackOverlay').classList.remove('show');
+
+  currentStory++;
+
+  if (currentStory >= STORIES.length) {
+    // Show loading then results
+    document.getElementById('loadingScreen').classList.add('show');
+    setTimeout(() => {
+      calculateResults();
+      document.getElementById('loadingScreen').classList.remove('show');
+      showScreen('resultScreen');
+    }, 2500);
+  } else {
+    setTimeout(renderStory, 300);
+  }
+}
+
+function calculateResults() {
+  // Normalize based on ACTUAL max score, not theoretical max
+  const maxScore = Math.max(...Object.values(scores));
+  const normalized = {};
+  Object.keys(scores).forEach(p => {
+    // Scale to 0-100 based on actual max value to fill the chart
+    normalized[p] = maxScore > 0 ? Math.round((scores[p] / maxScore) * 100) : 0;
+  });
+
+  // Also keep raw percentages for display
+  const maxPossible = STORIES.length * 6;
+  const rawPercent = {};
+  Object.keys(scores).forEach(p => {
+    rawPercent[p] = Math.round((scores[p] / maxPossible) * 100);
+  });
+
+  // Find primary and secondary
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const primary = sorted[0][0];
+  const secondary = sorted[1][0];
+  const typeCode = primary + '_' + secondary;
+  const type = TYPES[typeCode] || TYPES['fire_wind'];
+
+  renderResult(type, typeCode, normalized, rawPercent, sorted);
+}
+
+function renderResult(type, typeCode, normalized, rawPercent, sorted) {
+  const content = document.getElementById('resultContent');
+  content.scrollTop = 0;
+
+  const radarSvg = createRadarChart(normalized);
+
+  content.innerHTML = `
+    <div style="text-align:center;">
+      <div class="result-header-icon">${type.icon}</div>
+      <div class="result-label">あなたの物語は</div>
+      <div class="result-type-name">${type.nameJa}</div>
+      <div class="result-type-en">${type.nameEn}</div>
+      <div class="archetype-badge">${type.archetype}</div>
+    </div>
+
+    <div class="radar-container">${radarSvg}</div>
+
+    <div class="score-section">
+      <div class="score-section-title">あなたの魂の形</div>
+      ${Object.keys(PARAM_META).map(p => `
+        <div class="score-item">
+          <span class="score-icon">${PARAM_META[p].icon}</span>
+          <span class="score-name">${PARAM_META[p].name}</span>
+          <div class="score-bar-bg">
+            <div class="score-bar-fill" style="background:${PARAM_META[p].color};" data-width="${normalized[p]}%"></div>
+          </div>
+          <span class="score-value">${rawPercent[p]}%</span>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="type-description">
+      <div class="type-desc-text">${type.desc}</div>
+      <div class="type-traits">
+        <div>
+          <div class="trait-group-title">✦ 強み</div>
+          <div class="trait-tags">
+            ${type.strengths.map(s => `<span class="trait-tag strength">${s}</span>`).join('')}
+          </div>
+        </div>
+        <div>
+          <div class="trait-group-title">✦ 注意点</div>
+          <div class="trait-tags">
+            ${type.weaknesses.map(w => `<span class="trait-tag weakness">${w}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="advice-section">
+      <div class="advice-title">🤖 AIとの付き合い方</div>
+      <div class="advice-text">${type.advice}</div>
+    </div>
+
+    <div class="share-section">
+      <div class="share-card">
+        <div class="share-card-title">魂の図書館</div>
+        <div class="share-card-type">${type.icon} ${type.nameJa}</div>
+        <div class="share-card-params">
+          ${Object.keys(PARAM_META).map(p => `<span>${PARAM_META[p].icon}${rawPercent[p]}%</span>`).join('')}
+        </div>
+      </div>
+
+      <button class="retry-btn" onclick="restart()">
+        もう一度診断する 📖
+      </button>
+    </div>
+  `;
+
+  // Animate score bars
+  setTimeout(() => {
+    content.querySelectorAll('.score-bar-fill').forEach(bar => {
+      bar.style.width = bar.dataset.width;
+    });
+  }, 300);
+}
+
+function createRadarChart(normalized) {
+  const params = ['fire', 'root', 'wind', 'water', 'light'];
+  const cx = 180, cy = 170, r = 130;
+  const angles = params.map((_, i) => (i * 2 * Math.PI / 5) - Math.PI / 2);
+
+  // Background grid
+  let grid = '';
+  [0.2, 0.4, 0.6, 0.8, 1.0].forEach(scale => {
+    const points = angles.map(a =>
+      `${cx + r * scale * Math.cos(a)},${cy + r * scale * Math.sin(a)}`
+    ).join(' ');
+    grid += `<polygon points="${points}" fill="none" stroke="rgba(201,168,76,${scale === 1 ? 0.25 : 0.12})" stroke-width="${scale === 1 ? 1.5 : 1}"/>`;
+  });
+
+  // Axis lines
+  let axes = '';
+  angles.forEach(a => {
+    axes += `<line x1="${cx}" y1="${cy}" x2="${cx + r * Math.cos(a)}" y2="${cy + r * Math.sin(a)}" stroke="rgba(201,168,76,0.18)" stroke-width="1"/>`;
+  });
+
+  // Data polygon
+  const dataPoints = params.map((p, i) => {
+    const val = normalized[p] / 100;
+    return `${cx + r * val * Math.cos(angles[i])},${cy + r * val * Math.sin(angles[i])}`;
+  }).join(' ');
+
+  // Labels
+  let labels = '';
+  params.forEach((p, i) => {
+    const labelR = r + 32;
+    const x = cx + labelR * Math.cos(angles[i]);
+    const y = cy + labelR * Math.sin(angles[i]);
+    labels += `<text x="${x}" y="${y - 8}" text-anchor="middle" dominant-baseline="central" font-family="'Kiwi Maru', serif" font-size="20">${PARAM_META[p].icon}</text>`;
+    labels += `<text x="${x}" y="${y + 12}" text-anchor="middle" dominant-baseline="central" font-family="'Kiwi Maru', serif" font-size="13" fill="#6B5B4B">${PARAM_META[p].name}</text>`;
+  });
+
+  return `
+    <svg viewBox="0 0 360 350" xmlns="http://www.w3.org/2000/svg">
+      ${grid}
+      ${axes}
+      <polygon points="${dataPoints}" fill="rgba(201,168,76,0.18)" stroke="var(--gold)" stroke-width="2.5" stroke-linejoin="round">
+        <animate attributeName="opacity" from="0" to="1" dur="1s" fill="freeze"/>
+      </polygon>
+      ${params.map((p, i) => {
+        const val = normalized[p] / 100;
+        const x = cx + r * val * Math.cos(angles[i]);
+        const y = cy + r * val * Math.sin(angles[i]);
+        return `<circle cx="${x}" cy="${y}" r="5" fill="${PARAM_META[p].color}" stroke="white" stroke-width="2.5">
+          <animate attributeName="r" from="0" to="5" dur="0.8s" fill="freeze" begin="0.3s"/>
+        </circle>`;
+      }).join('')}
+      ${labels}
+    </svg>
+  `;
+}
+
+function restart() {
+  currentStory = 0;
+  answers = [];
+  scores = { fire: 0, root: 0, wind: 0, water: 0, light: 0 };
+  showScreen('coverScreen');
+  const cover = document.querySelector('.book-cover');
+  cover.style.transition = 'none';
+  cover.style.transform = '';
+  cover.style.opacity = '';
+  setTimeout(() => {
+    cover.style.animation = 'bookFloat 4s ease-in-out infinite';
+  }, 50);
+}
+
+// Init
+createStars();
+</script>
+
+</body>
+</html>
