@@ -1051,7 +1051,7 @@ html, body {
 <div class="book-world" id="app">
 
   <!-- COVER SCREEN -->
-  <div class="screen cover-screen" id="coverScreen">
+  <div class="screen cover-screen active" id="coverScreen">
     <div class="book-cover" onclick="openBook()">
       <div class="cover-ornament"></div>
       <div class="cover-content">
@@ -1184,18 +1184,25 @@ let fadeTimer = null;
 let fadeAudioTimer = null;
 
 function fadeOutAudio(video, duration, callback) {
-  // 音声を徐々に下げる
   clearInterval(fadeAudioTimer);
+
+  // ミュートなら音声FOスキップ、映像FOのみ
+  if (video.muted || video.volume === 0) {
+    if (callback) setTimeout(callback, duration);
+    return;
+  }
+
   const steps = 20;
   const interval = duration / steps;
-  const startVol = video.muted ? 0 : video.volume;
+  const startVol = video.volume;
   let step = 0;
 
   fadeAudioTimer = setInterval(() => {
     step++;
-    const progress = step / steps;
-    if (!video.muted) {
-      video.volume = Math.max(0, startVol * (1 - progress));
+    try {
+      video.volume = Math.max(0, startVol * (1 - step / steps));
+    } catch(e) {
+      // volume設定失敗時は無視
     }
     if (step >= steps) {
       clearInterval(fadeAudioTimer);
@@ -1205,15 +1212,18 @@ function fadeOutAudio(video, duration, callback) {
 }
 
 function resetVideoState() {
-  const overlay = document.getElementById('videoOverlay');
   const video = document.getElementById('storyVideo');
   clearInterval(fadeAudioTimer);
   clearTimeout(fadeTimer);
   video.ontimeupdate = null;
   video.onended = null;
   video.onerror = null;
-  overlay.classList.remove('fading');
   video.volume = 1;
+}
+
+function cleanupOverlay() {
+  const overlay = document.getElementById('videoOverlay');
+  overlay.classList.remove('fading');
 }
 
 // ===== INTRO VIDEO (st00) =====
@@ -1225,6 +1235,7 @@ function playIntroVideo() {
   const skipBtn = document.getElementById('videoSkipBtn');
 
   resetVideoState();
+  cleanupOverlay();
 
   label.textContent = '';
   label.style.opacity = '0';
@@ -1289,14 +1300,16 @@ function doFinishIntro() {
   const skipBtn = document.getElementById('videoSkipBtn');
 
   resetVideoState();
+  // showを外してオーバーレイ全体をフェードアウト（.fadingは残す）
   overlay.classList.remove('show');
 
   setTimeout(() => {
     video.pause();
     video.removeAttribute('src');
+    cleanupOverlay();
     skipBtn.onclick = () => { skipVideo(); };
-    showScreen('coverScreen');
-  }, 600);
+    showScreen('introScreen');
+  }, 700);
 }
 
 // ===== DATA =====
@@ -1477,7 +1490,8 @@ function openBook() {
   cover.style.transition = 'transform 0.8s ease, opacity 0.6s ease';
   cover.style.transform = 'rotateY(-90deg) scale(0.9)';
   cover.style.opacity = '0';
-  setTimeout(() => showScreen('introScreen'), 500);
+  // ユーザータップ後なので音声再生可能
+  setTimeout(() => playIntroVideo(), 400);
 }
 
 function startDiagnosis() {
@@ -1496,6 +1510,7 @@ function playStoryVideo() {
   const label = document.getElementById('videoChapterLabel');
 
   resetVideoState();
+  cleanupOverlay();
 
   // チャプターラベル設定
   label.textContent = `― 第${story.number}話 ― ${story.title}`;
@@ -1577,9 +1592,10 @@ function doFinishStory() {
   setTimeout(() => {
     video.pause();
     video.removeAttribute('src');
+    cleanupOverlay();
     showScreen('storyScreen');
     renderStory();
-  }, 600);
+  }, 700);
 }
 
 function renderStory() {
@@ -1833,8 +1849,8 @@ function restart() {
   }, 50);
 }
 
-// ===== 初期化: st00再生 → 表紙表示 =====
-playIntroVideo();
+// ===== 初期化 =====
+// 表紙タップ → st00再生 → 序章（openBook内で処理）
 </script>
 
 </body>
