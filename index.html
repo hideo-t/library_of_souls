@@ -846,7 +846,7 @@ html, body {
   height: 100%;
   object-fit: contain;
   background: #0A0706;
-  transition: opacity 1.2s ease;
+  transition: opacity 2s ease;
 }
 
 .video-overlay.fading video {
@@ -857,7 +857,13 @@ html, body {
 .video-overlay.fading .video-caption,
 .video-overlay.fading .video-skip-btn {
   opacity: 0 !important;
-  transition: opacity 0.8s ease;
+  transition: opacity 1.5s ease;
+}
+
+.video-chapter-label,
+.video-caption,
+.video-skip-btn {
+  transition: opacity 1.5s ease;
 }
 
 .video-skip-btn {
@@ -1179,51 +1185,84 @@ const VIDEO_CAPTIONS = {
   10: '長い旅の終わり――あなたは、どんな結末を選ぶのか',
 };
 
-// ===== SHARED FADEOUT HELPER =====
-let fadeTimer = null;
-let fadeAudioTimer = null;
+// ===== WEB AUDIO FADEOUT =====
+const VIDEO_SEC = 6;
+const FO_AT = 4;          // 4秒目からFO
+const FO_MS = 2000;       // 2秒かけて
 
-function fadeOutAudio(video, duration, callback) {
-  clearInterval(fadeAudioTimer);
+let audioCtx = null;
+let gainNode = null;
+let audioConnected = false;
+let foTimer = null;       // FO開始タイマー
+let doneTimer = null;     // 完了タイマー
 
-  // ミュートなら音声FOスキップ、映像FOのみ
-  if (video.muted || video.volume === 0) {
-    if (callback) setTimeout(callback, duration);
-    return;
+function initAudio(video) {
+  if (audioConnected) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioCtx.createMediaElementSource(video);
+    gainNode = audioCtx.createGain();
+    source.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    audioConnected = true;
+  } catch(e) {
+    // フォールバック: Web Audio非対応ならvolume制御
+    audioConnected = false;
   }
-
-  const steps = 20;
-  const interval = duration / steps;
-  const startVol = video.volume;
-  let step = 0;
-
-  fadeAudioTimer = setInterval(() => {
-    step++;
-    try {
-      video.volume = Math.max(0, startVol * (1 - step / steps));
-    } catch(e) {
-      // volume設定失敗時は無視
-    }
-    if (step >= steps) {
-      clearInterval(fadeAudioTimer);
-      if (callback) callback();
-    }
-  }, interval);
 }
 
-function resetVideoState() {
+function setGain(val) {
+  if (gainNode) {
+    gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(val, audioCtx.currentTime);
+  }
+}
+
+function fadeGain(sec) {
+  if (gainNode) {
+    gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + sec);
+  }
+}
+
+function scheduleVideoFO(overlay, onDone) {
+  clearTimers();
+  // 4秒後: 映像+音声FO開始
+  foTimer = setTimeout(() => {
+    overlay.classList.add('fading');
+    fadeGain(FO_MS / 1000);
+  }, FO_AT * 1000);
+  // 6秒後: 完了コールバック
+  doneTimer = setTimeout(() => {
+    if (onDone) onDone();
+  }, VIDEO_SEC * 1000);
+}
+
+function doQuickFO(overlay, video, onDone) {
+  clearTimers();
+  overlay.classList.add('fading');
+  fadeGain(0.4);
+  setTimeout(() => {
+    video.pause();
+    if (onDone) onDone();
+  }, 500);
+}
+
+function clearTimers() {
+  clearTimeout(foTimer);
+  clearTimeout(doneTimer);
+}
+
+function resetVideo() {
   const video = document.getElementById('storyVideo');
-  clearInterval(fadeAudioTimer);
-  clearTimeout(fadeTimer);
-  video.ontimeupdate = null;
+  clearTimers();
   video.onended = null;
   video.onerror = null;
-  video.volume = 1;
+  setGain(1);
 }
 
 function cleanupOverlay() {
-  const overlay = document.getElementById('videoOverlay');
-  overlay.classList.remove('fading');
+  document.getElementById('videoOverlay').classList.remove('fading');
 }
 
 // ===== INTRO VIDEO (st00) =====
@@ -1234,14 +1273,17 @@ function playIntroVideo() {
   const label = document.getElementById('videoChapterLabel');
   const skipBtn = document.getElementById('videoSkipBtn');
 
-  resetVideoState();
+  resetVideo();
   cleanupOverlay();
+
+  // Web Audio初期化（初回のみ、ユーザー操作後なのでOK）
+  initAudio(video);
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
   label.textContent = '';
   label.style.opacity = '0';
   skipBtn.style.display = 'block';
 
-  // キャプション設定
   const caption = document.getElementById('videoCaption');
   document.getElementById('videoCaptionText').textContent = VIDEO_CAPTIONS[0] || '';
   caption.style.animation = 'none';
@@ -1251,44 +1293,20 @@ function playIntroVideo() {
 
   video.src = storyVideoPath(0);
   video.currentTime = 0;
-  video.muted = false;
-  video.volume = 1;
-
   overlay.classList.add('show');
 
   video.play().catch(() => {
     video.muted = true;
-    video.play().catch(() => {
-      doFinishIntro();
-    });
+    video.play().catch(() => { doFinishIntro(); });
   });
 
-  // 終了1.5秒前からフェードアウト開始
-  let fadeStarted = false;
-  video.ontimeupdate = () => {
-    if (!fadeStarted && video.duration && video.currentTime >= video.duration - 1.5) {
-      fadeStarted = true;
-      overlay.classList.add('fading');
-      fadeOutAudio(video, 1200);
-    }
-  };
+  // 4秒→FO開始、6秒→完了
+  scheduleVideoFO(overlay, () => { doFinishIntro(); });
 
-  video.onended = () => { doFinishIntro(); };
   video.onerror = () => { doFinishIntro(); };
-
-  skipBtn.onclick = () => { skipIntroVideo(); };
-}
-
-function skipIntroVideo() {
-  const video = document.getElementById('storyVideo');
-  const overlay = document.getElementById('videoOverlay');
-
-  // 短めフェードアウト
-  overlay.classList.add('fading');
-  fadeOutAudio(video, 500, () => {
-    video.pause();
-    doFinishIntro();
-  });
+  skipBtn.onclick = () => {
+    doQuickFO(overlay, video, () => { doFinishIntro(); });
+  };
 }
 
 function doFinishIntro() {
@@ -1299,15 +1317,18 @@ function doFinishIntro() {
   const video = document.getElementById('storyVideo');
   const skipBtn = document.getElementById('videoSkipBtn');
 
-  resetVideoState();
-  // showを外してオーバーレイ全体をフェードアウト（.fadingは残す）
+  resetVideo();
   overlay.classList.remove('show');
 
   setTimeout(() => {
     video.pause();
     video.removeAttribute('src');
     cleanupOverlay();
-    skipBtn.onclick = () => { skipVideo(); };
+    skipBtn.onclick = () => {
+      const o = document.getElementById('videoOverlay');
+      const v = document.getElementById('storyVideo');
+      doQuickFO(o, v, () => { doFinishStory(); });
+    };
     showScreen('introScreen');
   }, 700);
 }
@@ -1509,17 +1530,16 @@ function playStoryVideo() {
   const video = document.getElementById('storyVideo');
   const label = document.getElementById('videoChapterLabel');
 
-  resetVideoState();
+  resetVideo();
   cleanupOverlay();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
-  // チャプターラベル設定
   label.textContent = `― 第${story.number}話 ― ${story.title}`;
   label.style.animation = 'none';
   label.offsetHeight;
   label.style.animation = 'fadeIn 1s ease 0.5s forwards';
   label.style.opacity = '0';
 
-  // キャプション設定
   const caption = document.getElementById('videoCaption');
   document.getElementById('videoCaptionText').textContent = VIDEO_CAPTIONS[story.number] || '';
   caption.style.animation = 'none';
@@ -1527,56 +1547,27 @@ function playStoryVideo() {
   caption.style.animation = 'captionFadeIn 1.5s ease 0.8s forwards';
   caption.style.opacity = '0';
 
-  // 動画設定
   video.src = videoSrc;
   video.currentTime = 0;
-  video.muted = false;
-  video.volume = 1;
-
-  // 表示
   overlay.classList.add('show');
 
-  // 再生
   video.play().catch(() => {
     video.muted = true;
-    video.play().catch(() => {
-      doFinishStory();
-    });
+    video.play().catch(() => { doFinishStory(); });
   });
 
-  // 終了1.5秒前からフェードアウト開始
-  let fadeStarted = false;
-  video.ontimeupdate = () => {
-    if (!fadeStarted && video.duration && video.currentTime >= video.duration - 1.5) {
-      fadeStarted = true;
-      overlay.classList.add('fading');
-      fadeOutAudio(video, 1200);
-    }
-  };
+  // 4秒→FO開始、6秒→完了
+  scheduleVideoFO(overlay, () => { doFinishStory(); });
 
-  // 動画終了時
-  video.onended = () => {
-    doFinishStory();
-  };
-
-  // エラー時
-  video.onerror = () => {
-    doFinishStory();
-  };
+  video.onerror = () => { doFinishStory(); };
 }
 
 let videoPlaying = false;
 
 function skipVideo() {
-  const video = document.getElementById('storyVideo');
   const overlay = document.getElementById('videoOverlay');
-
-  // 短めフェードアウト
-  overlay.classList.add('fading');
-  fadeOutAudio(video, 500, () => {
-    video.pause();
-    doFinishStory();
-  });
+  const video = document.getElementById('storyVideo');
+  doQuickFO(overlay, video, () => { doFinishStory(); });
 }
 
 function doFinishStory() {
@@ -1586,7 +1577,7 @@ function doFinishStory() {
   const overlay = document.getElementById('videoOverlay');
   const video = document.getElementById('storyVideo');
 
-  resetVideoState();
+  resetVideo();
   overlay.classList.remove('show');
 
   setTimeout(() => {
