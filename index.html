@@ -886,6 +886,31 @@ html, body {
   animation: fadeIn 1s ease 0.5s forwards;
 }
 
+.video-caption {
+  position: absolute;
+  bottom: 80px;
+  left: 0; right: 0;
+  text-align: center;
+  padding: 0 24px;
+  z-index: 10;
+  opacity: 0;
+  animation: captionFadeIn 1.5s ease 0.8s forwards;
+}
+
+.video-caption-text {
+  font-family: 'Kiwi Maru', serif;
+  font-size: 14px;
+  line-height: 1.8;
+  color: rgba(232, 201, 90, 0.9);
+  text-shadow: 0 1px 6px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.5);
+  letter-spacing: 0.05em;
+}
+
+@keyframes captionFadeIn {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 /* ===== LOADING SCREEN ===== */
 .loading-screen {
   position: fixed;
@@ -1086,6 +1111,9 @@ html, body {
   <div class="video-overlay" id="videoOverlay">
     <div class="video-chapter-label" id="videoChapterLabel"></div>
     <video id="storyVideo" playsinline webkit-playsinline></video>
+    <div class="video-caption" id="videoCaption">
+      <div class="video-caption-text" id="videoCaptionText"></div>
+    </div>
     <button class="video-skip-btn" id="videoSkipBtn" onclick="skipVideo()">スキップ ▸</button>
   </div>
 
@@ -1124,6 +1152,21 @@ function storyVideoPath(num) {
   return `assets/illustrations/movie/st${String(num).padStart(2,'0')}.mp4`;
 }
 
+// 各物語の動画再生中に表示する一行キャプション
+const VIDEO_CAPTIONS = {
+  0:  'あなたの魂が語る物語を、一緒に探しにゆきましょう',
+  1:  '朝霧の向こうに、まだ見ぬ世界が広がっている',
+  2:  '苔むした祠で、三つの光があなたを待っている',
+  3:  '深い森の三又路――道標の文字は、もう読めない',
+  4:  '罠にかかった小さな狐が、怯えた目であなたを見上げた',
+  5:  '壁の奥から漏れる不思議な光が、あなたを呼んでいる',
+  6:  '山頂の竜が目を開く。その怒りには、理由があった',
+  7:  '一度だけ時を操れる砂時計を、あなたは手にした',
+  8:  '旅の夜、見知らぬ村の祭りの音が風に乗って届いた',
+  9:  '世界の真理が記された書物が、あなたの前に現れた',
+  10: '長い旅の終わり――あなたは、どんな結末を選ぶのか',
+};
+
 // ===== INTRO VIDEO (st00) =====
 function playIntroVideo() {
   videoPlaying = true;
@@ -1135,6 +1178,14 @@ function playIntroVideo() {
   label.textContent = '';
   label.style.opacity = '0';
   skipBtn.style.display = 'block';
+
+  // キャプション設定
+  const caption = document.getElementById('videoCaption');
+  document.getElementById('videoCaptionText').textContent = VIDEO_CAPTIONS[0] || '';
+  caption.style.animation = 'none';
+  caption.offsetHeight;
+  caption.style.animation = 'captionFadeIn 1.5s ease 0.8s forwards';
+  caption.style.opacity = '0';
 
   video.src = storyVideoPath(0);
   video.currentTime = 0;
@@ -1389,6 +1440,14 @@ function playStoryVideo() {
   label.offsetHeight; // reflow
   label.style.animation = 'fadeIn 1s ease 0.5s forwards';
   label.style.opacity = '0';
+
+  // キャプション設定
+  const caption = document.getElementById('videoCaption');
+  document.getElementById('videoCaptionText').textContent = VIDEO_CAPTIONS[story.number] || '';
+  caption.style.animation = 'none';
+  caption.offsetHeight;
+  caption.style.animation = 'captionFadeIn 1.5s ease 0.8s forwards';
+  caption.style.opacity = '0';
 
   // 動画設定
   video.src = videoSrc;
