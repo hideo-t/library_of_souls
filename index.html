@@ -49,11 +49,13 @@ html, body {
   perspective: 1200px;
 }
 
+/* Library background image */
 .book-world::before {
   content: '';
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background: url('assets/ui/bg_library.png') center/cover no-repeat;
+  opacity: 0.25;
   pointer-events: none;
   z-index: 0;
 }
@@ -101,6 +103,17 @@ html, body {
   overflow: hidden;
 }
 
+/* Cover book image overlay */
+.book-cover::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: url('assets/ui/cover_book.png') center/cover no-repeat;
+  opacity: 0.5;
+  mix-blend-mode: screen;
+  border-radius: inherit;
+}
+
 .book-cover:hover, .book-cover:active {
   transform: scale(1.02) rotateY(-3deg);
   box-shadow:
@@ -122,6 +135,7 @@ html, body {
   margin: 16px;
   border-radius: 2px 12px 12px 2px;
   opacity: 0.7;
+  z-index: 2;
 }
 
 .cover-ornament::before, .cover-ornament::after {
@@ -141,6 +155,7 @@ html, body {
   transform: translate(-50%, -50%);
   text-align: center;
   width: 80%;
+  z-index: 2;
 }
 
 .cover-icon {
@@ -161,7 +176,7 @@ html, body {
   font-size: 28px;
   color: var(--gold-bright);
   line-height: 1.5;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.7);
   margin-bottom: 12px;
   letter-spacing: 0.1em;
 }
@@ -169,9 +184,10 @@ html, body {
 .cover-subtitle {
   font-family: 'Kiwi Maru', serif;
   font-size: 13px;
-  color: rgba(232, 201, 90, 0.7);
+  color: rgba(232, 201, 90, 0.8);
   line-height: 1.8;
   letter-spacing: 0.05em;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
 }
 
 .cover-tap {
@@ -184,6 +200,7 @@ html, body {
   color: rgba(232, 201, 90, 0.5);
   animation: tapPulse 2s ease-in-out infinite;
   letter-spacing: 0.1em;
+  z-index: 2;
 }
 
 @keyframes tapPulse {
@@ -204,13 +221,15 @@ html, body {
   -webkit-overflow-scrolling: touch;
   padding: 32px 24px;
   position: relative;
+  /* Parchment background texture */
+  background: url('assets/ui/bg_parchment.png') center/cover repeat;
 }
 
 .page-inner::before {
   content: '';
-  position: fixed;
+  position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.06'/%3E%3C/svg%3E");
+  background: rgba(245, 230, 200, 0.75);
   pointer-events: none;
   z-index: 0;
 }
@@ -232,42 +251,30 @@ html, body {
 .intro-illustration {
   width: 100%;
   max-width: 320px;
-  aspect-ratio: 4/3;
   margin: 0 auto 24px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #2D1B4E 0%, #1A3A5C 40%, #0D2B45 100%);
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 24px rgba(0,0,0,0.2);
 }
 
-.intro-illustration::before {
-  content: '📚';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 64px;
-  animation: bookFloat 4s ease-in-out infinite;
+.intro-illustration img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
-.intro-illustration .stars {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+.librarian-container {
+  width: 120px;
+  margin: 0 auto 20px;
+  position: relative;
 }
 
-.star {
-  position: absolute;
-  width: 3px;
-  height: 3px;
-  background: #FFF;
-  border-radius: 50%;
-  animation: twinkle 3s ease-in-out infinite;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
+.librarian-container img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
 }
 
 .chapter-num {
@@ -326,13 +333,20 @@ html, body {
 /* ===== STORY ILLUSTRATION ===== */
 .story-illustration {
   width: 100%;
-  max-width: 320px;
-  aspect-ratio: 16/10;
+  max-width: 340px;
   margin: 0 auto 20px;
   border-radius: 12px;
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  background: #2A1F1A;
+}
+
+.story-illustration img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
 }
 
 .story-illustration .scene-bg {
@@ -346,6 +360,20 @@ html, body {
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 48px;
+  display: none; /* Hidden when image is available */
+}
+
+/* Fallback: show emoji only if image fails */
+.story-illustration.no-image .scene-emoji {
+  display: block;
+}
+
+.story-illustration.no-image .scene-bg {
+  display: block;
+}
+
+.story-illustration.no-image img {
+  display: none;
 }
 
 /* ===== CHOICES ===== */
@@ -527,19 +555,34 @@ html, body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: 40px 24px 60px;
-  background: var(--parchment);
+  background: url('assets/ui/bg_parchment.png') center/cover repeat;
   position: relative;
 }
 
 .result-inner::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0; height: 200px;
-  background: linear-gradient(to bottom, rgba(139, 37, 0, 0.08), transparent);
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(245, 230, 200, 0.7);
   pointer-events: none;
 }
 
 .result-inner > * { position: relative; z-index: 1; }
+
+.result-type-image {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2), 0 0 0 4px var(--gold), 0 0 0 8px rgba(201,168,76,0.2);
+}
+
+.result-type-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 .result-header-icon {
   font-size: 56px;
@@ -796,6 +839,19 @@ html, body {
   pointer-events: auto;
 }
 
+.loading-librarian {
+  width: 120px;
+  height: auto;
+  margin-bottom: 20px;
+  animation: loadingFloat 2s ease-in-out infinite;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+}
+
+@keyframes loadingFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
 .loading-book {
   font-size: 48px;
   animation: loadingFlip 1.5s ease-in-out infinite;
@@ -829,7 +885,19 @@ html, body {
   padding: 28px 24px;
   color: var(--gold-bright);
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  position: relative;
+  overflow: hidden;
 }
+
+.share-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: url('assets/ui/bg_parchment.png') center/cover;
+  opacity: 0.08;
+}
+
+.share-card > * { position: relative; z-index: 1; }
 
 .share-card-title {
   font-family: 'Zen Old Mincho', serif;
@@ -898,7 +966,11 @@ html, body {
     <div class="page-edge"></div>
     <div class="page-inner">
       <div class="intro-illustration">
-        <div class="stars" id="introStars"></div>
+        <img src="assets/ui/bg_library.png" alt="魂の図書館">
+      </div>
+
+      <div class="librarian-container">
+        <img src="assets/ui/librarian_character.png" alt="司書">
       </div>
 
       <div class="chapter-num">― 序章 ―</div>
@@ -945,7 +1017,7 @@ html, body {
 
   <!-- LOADING SCREEN -->
   <div class="loading-screen" id="loadingScreen">
-    <div class="loading-book">📖</div>
+    <img src="assets/ui/librarian_character.png" alt="司書" class="loading-librarian">
     <div class="loading-text">あなたの物語を紐解いています…</div>
   </div>
 
@@ -960,6 +1032,20 @@ html, body {
 </div>
 
 <script>
+// ===== IMAGE PATH HELPERS =====
+function storyImagePath(num) {
+  return `assets/illustrations/stories/story_${String(num).padStart(2,'0')}_base.png`;
+}
+
+function typeImagePath(primary, secondary) {
+  return `assets/illustrations/types/type_${primary}_${secondary}.png`;
+}
+
+function badgePath(primary, secondary, size) {
+  size = size || 'lg';
+  return `assets/badges/badge_${primary}_${secondary}_${size}.png`;
+}
+
 // ===== DATA =====
 const STORIES = [
   {
@@ -1141,21 +1227,6 @@ function openBook() {
   setTimeout(() => showScreen('introScreen'), 500);
 }
 
-function createStars() {
-  const container = document.getElementById('introStars');
-  if (!container) return;
-  for (let i = 0; i < 20; i++) {
-    const star = document.createElement('div');
-    star.className = 'star';
-    star.style.left = Math.random() * 100 + '%';
-    star.style.top = Math.random() * 100 + '%';
-    star.style.animationDelay = Math.random() * 3 + 's';
-    star.style.width = (Math.random() * 3 + 1) + 'px';
-    star.style.height = star.style.width;
-    container.appendChild(star);
-  }
-}
-
 function startDiagnosis() {
   currentStory = 0;
   answers = [];
@@ -1169,12 +1240,15 @@ function renderStory() {
   const progress = ((currentStory) / STORIES.length) * 100;
   document.getElementById('progressFill').style.width = progress + '%';
 
+  const imgSrc = storyImagePath(story.number);
+
   const content = document.getElementById('storyContent');
   content.scrollTop = 0;
   content.innerHTML = `
-    <div class="story-illustration fade-in">
+    <div class="story-illustration fade-in" id="storyIllust">
       <div class="scene-bg" style="background: ${story.bgGradient};"></div>
       <div class="scene-emoji">${story.emoji}</div>
+      <img src="${imgSrc}" alt="${story.title}" onerror="this.parentElement.classList.add('no-image');">
     </div>
     <div class="chapter-num fade-in-up delay-1">― 第${story.number}話 ―</div>
     <div class="page-title fade-in-up delay-2">${story.title}</div>
@@ -1195,7 +1269,6 @@ function selectChoice(index) {
   const story = STORIES[currentStory];
   const choice = story.choices[index];
 
-  // Update scores
   Object.keys(choice.weights).forEach(param => {
     scores[param] += choice.weights[param];
   });
@@ -1206,13 +1279,11 @@ function selectChoice(index) {
     choiceIndex: index
   });
 
-  // Highlight selected
   document.querySelectorAll('.choice-btn').forEach((btn, i) => {
     if (i === index) btn.classList.add('selected');
     btn.style.pointerEvents = 'none';
   });
 
-  // Show feedback
   setTimeout(() => {
     const overlay = document.getElementById('feedbackOverlay');
     document.getElementById('feedbackIcon').textContent = choice.icon;
@@ -1230,11 +1301,9 @@ function selectChoice(index) {
 
 function nextStory() {
   document.getElementById('feedbackOverlay').classList.remove('show');
-
   currentStory++;
 
   if (currentStory >= STORIES.length) {
-    // Show loading then results
     document.getElementById('loadingScreen').classList.add('show');
     setTimeout(() => {
       calculateResults();
@@ -1247,39 +1316,39 @@ function nextStory() {
 }
 
 function calculateResults() {
-  // Normalize based on ACTUAL max score, not theoretical max
   const maxScore = Math.max(...Object.values(scores));
   const normalized = {};
   Object.keys(scores).forEach(p => {
-    // Scale to 0-100 based on actual max value to fill the chart
     normalized[p] = maxScore > 0 ? Math.round((scores[p] / maxScore) * 100) : 0;
   });
 
-  // Also keep raw percentages for display
   const maxPossible = STORIES.length * 6;
   const rawPercent = {};
   Object.keys(scores).forEach(p => {
     rawPercent[p] = Math.round((scores[p] / maxPossible) * 100);
   });
 
-  // Find primary and secondary
   const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   const primary = sorted[0][0];
   const secondary = sorted[1][0];
   const typeCode = primary + '_' + secondary;
   const type = TYPES[typeCode] || TYPES['fire_wind'];
 
-  renderResult(type, typeCode, normalized, rawPercent, sorted);
+  renderResult(type, typeCode, primary, secondary, normalized, rawPercent, sorted);
 }
 
-function renderResult(type, typeCode, normalized, rawPercent, sorted) {
+function renderResult(type, typeCode, primary, secondary, normalized, rawPercent, sorted) {
   const content = document.getElementById('resultContent');
   content.scrollTop = 0;
 
   const radarSvg = createRadarChart(normalized);
+  const typeImgSrc = typeImagePath(primary, secondary);
 
   content.innerHTML = `
     <div style="text-align:center;">
+      <div class="result-type-image">
+        <img src="${typeImgSrc}" alt="${type.nameJa}" onerror="this.style.display='none';">
+      </div>
       <div class="result-header-icon">${type.icon}</div>
       <div class="result-label">あなたの物語は</div>
       <div class="result-type-name">${type.nameJa}</div>
@@ -1341,7 +1410,6 @@ function renderResult(type, typeCode, normalized, rawPercent, sorted) {
     </div>
   `;
 
-  // Animate score bars
   setTimeout(() => {
     content.querySelectorAll('.score-bar-fill').forEach(bar => {
       bar.style.width = bar.dataset.width;
@@ -1354,7 +1422,6 @@ function createRadarChart(normalized) {
   const cx = 180, cy = 170, r = 130;
   const angles = params.map((_, i) => (i * 2 * Math.PI / 5) - Math.PI / 2);
 
-  // Background grid
   let grid = '';
   [0.2, 0.4, 0.6, 0.8, 1.0].forEach(scale => {
     const points = angles.map(a =>
@@ -1363,19 +1430,16 @@ function createRadarChart(normalized) {
     grid += `<polygon points="${points}" fill="none" stroke="rgba(201,168,76,${scale === 1 ? 0.25 : 0.12})" stroke-width="${scale === 1 ? 1.5 : 1}"/>`;
   });
 
-  // Axis lines
   let axes = '';
   angles.forEach(a => {
     axes += `<line x1="${cx}" y1="${cy}" x2="${cx + r * Math.cos(a)}" y2="${cy + r * Math.sin(a)}" stroke="rgba(201,168,76,0.18)" stroke-width="1"/>`;
   });
 
-  // Data polygon
   const dataPoints = params.map((p, i) => {
     const val = normalized[p] / 100;
     return `${cx + r * val * Math.cos(angles[i])},${cy + r * val * Math.sin(angles[i])}`;
   }).join(' ');
 
-  // Labels
   let labels = '';
   params.forEach((p, i) => {
     const labelR = r + 32;
@@ -1418,9 +1482,6 @@ function restart() {
     cover.style.animation = 'bookFloat 4s ease-in-out infinite';
   }, 50);
 }
-
-// Init
-createStars();
 </script>
 
 </body>
