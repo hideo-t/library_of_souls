@@ -1225,6 +1225,13 @@ function fadeGain(sec) {
   }
 }
 
+function fadeGainTo(val, sec) {
+  if (gainNode) {
+    gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(val, audioCtx.currentTime + sec);
+  }
+}
+
 function scheduleVideoFO(overlay, onDone) {
   clearTimers();
   // 4秒後: 映像+音声FO開始
@@ -1295,10 +1302,15 @@ function playIntroVideo() {
   video.currentTime = 0;
   overlay.classList.add('show');
 
+  // 音声フェードイン: 無音から1.5秒かけて立ち上げ
+  setGain(0);
+
   video.play().catch(() => {
     video.muted = true;
     video.play().catch(() => { doFinishIntro(); });
   });
+
+  fadeGainTo(1, 1.5);
 
   // 4秒→FO開始、6秒→完了
   scheduleVideoFO(overlay, () => { doFinishIntro(); });
