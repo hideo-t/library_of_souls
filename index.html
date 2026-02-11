@@ -846,6 +846,18 @@ html, body {
   height: 100%;
   object-fit: contain;
   background: #0A0706;
+  transition: opacity 1.2s ease;
+}
+
+.video-overlay.fading video {
+  opacity: 0;
+}
+
+.video-overlay.fading .video-chapter-label,
+.video-overlay.fading .video-caption,
+.video-overlay.fading .video-skip-btn {
+  opacity: 0 !important;
+  transition: opacity 0.8s ease;
 }
 
 .video-skip-btn {
@@ -1167,6 +1179,43 @@ const VIDEO_CAPTIONS = {
   10: '長い旅の終わり――あなたは、どんな結末を選ぶのか',
 };
 
+// ===== SHARED FADEOUT HELPER =====
+let fadeTimer = null;
+let fadeAudioTimer = null;
+
+function fadeOutAudio(video, duration, callback) {
+  // 音声を徐々に下げる
+  clearInterval(fadeAudioTimer);
+  const steps = 20;
+  const interval = duration / steps;
+  const startVol = video.muted ? 0 : video.volume;
+  let step = 0;
+
+  fadeAudioTimer = setInterval(() => {
+    step++;
+    const progress = step / steps;
+    if (!video.muted) {
+      video.volume = Math.max(0, startVol * (1 - progress));
+    }
+    if (step >= steps) {
+      clearInterval(fadeAudioTimer);
+      if (callback) callback();
+    }
+  }, interval);
+}
+
+function resetVideoState() {
+  const overlay = document.getElementById('videoOverlay');
+  const video = document.getElementById('storyVideo');
+  clearInterval(fadeAudioTimer);
+  clearTimeout(fadeTimer);
+  video.ontimeupdate = null;
+  video.onended = null;
+  video.onerror = null;
+  overlay.classList.remove('fading');
+  video.volume = 1;
+}
+
 // ===== INTRO VIDEO (st00) =====
 function playIntroVideo() {
   videoPlaying = true;
@@ -1174,6 +1223,8 @@ function playIntroVideo() {
   const video = document.getElementById('storyVideo');
   const label = document.getElementById('videoChapterLabel');
   const skipBtn = document.getElementById('videoSkipBtn');
+
+  resetVideoState();
 
   label.textContent = '';
   label.style.opacity = '0';
@@ -1190,32 +1241,46 @@ function playIntroVideo() {
   video.src = storyVideoPath(0);
   video.currentTime = 0;
   video.muted = false;
+  video.volume = 1;
 
   overlay.classList.add('show');
 
   video.play().catch(() => {
     video.muted = true;
     video.play().catch(() => {
-      finishIntroVideo();
+      doFinishIntro();
     });
   });
 
-  video.onended = () => { finishIntroVideo(); };
-  video.onerror = () => { finishIntroVideo(); };
+  // 終了1.5秒前からフェードアウト開始
+  let fadeStarted = false;
+  video.ontimeupdate = () => {
+    if (!fadeStarted && video.duration && video.currentTime >= video.duration - 1.5) {
+      fadeStarted = true;
+      overlay.classList.add('fading');
+      fadeOutAudio(video, 1200);
+    }
+  };
 
-  // スキップボタンを一時的にイントロ用に差し替え
+  video.onended = () => { doFinishIntro(); };
+  video.onerror = () => { doFinishIntro(); };
+
   skipBtn.onclick = () => { skipIntroVideo(); };
 }
 
 function skipIntroVideo() {
   const video = document.getElementById('storyVideo');
-  video.pause();
-  video.onended = null;
-  video.onerror = null;
-  finishIntroVideo();
+  const overlay = document.getElementById('videoOverlay');
+
+  // 短めフェードアウト
+  overlay.classList.add('fading');
+  fadeOutAudio(video, 500, () => {
+    video.pause();
+    doFinishIntro();
+  });
 }
 
-function finishIntroVideo() {
+function doFinishIntro() {
   if (!videoPlaying) return;
   videoPlaying = false;
 
@@ -1223,19 +1288,15 @@ function finishIntroVideo() {
   const video = document.getElementById('storyVideo');
   const skipBtn = document.getElementById('videoSkipBtn');
 
-  video.onended = null;
-  video.onerror = null;
-
+  resetVideoState();
   overlay.classList.remove('show');
 
   setTimeout(() => {
     video.pause();
     video.removeAttribute('src');
-    // スキップボタンを通常に戻す
     skipBtn.onclick = () => { skipVideo(); };
-    // 表紙を表示
     showScreen('coverScreen');
-  }, 500);
+  }, 600);
 }
 
 // ===== DATA =====
@@ -1434,10 +1495,12 @@ function playStoryVideo() {
   const video = document.getElementById('storyVideo');
   const label = document.getElementById('videoChapterLabel');
 
+  resetVideoState();
+
   // チャプターラベル設定
   label.textContent = `― 第${story.number}話 ― ${story.title}`;
   label.style.animation = 'none';
-  label.offsetHeight; // reflow
+  label.offsetHeight;
   label.style.animation = 'fadeIn 1s ease 0.5s forwards';
   label.style.opacity = '0';
 
@@ -1453,28 +1516,37 @@ function playStoryVideo() {
   video.src = videoSrc;
   video.currentTime = 0;
   video.muted = false;
+  video.volume = 1;
 
   // 表示
   overlay.classList.add('show');
 
   // 再生
   video.play().catch(() => {
-    // 自動再生ブロック時はミュートで再生
     video.muted = true;
     video.play().catch(() => {
-      // それでもダメならスキップ
-      finishVideo();
+      doFinishStory();
     });
   });
 
-  // 動画終了時
-  video.onended = () => {
-    finishVideo();
+  // 終了1.5秒前からフェードアウト開始
+  let fadeStarted = false;
+  video.ontimeupdate = () => {
+    if (!fadeStarted && video.duration && video.currentTime >= video.duration - 1.5) {
+      fadeStarted = true;
+      overlay.classList.add('fading');
+      fadeOutAudio(video, 1200);
+    }
   };
 
-  // エラー時（動画ファイルがない場合）
+  // 動画終了時
+  video.onended = () => {
+    doFinishStory();
+  };
+
+  // エラー時
   video.onerror = () => {
-    finishVideo();
+    doFinishStory();
   };
 }
 
@@ -1482,24 +1554,24 @@ let videoPlaying = false;
 
 function skipVideo() {
   const video = document.getElementById('storyVideo');
-  video.pause();
-  video.onended = null;
-  video.onerror = null;
-  finishVideo();
+  const overlay = document.getElementById('videoOverlay');
+
+  // 短めフェードアウト
+  overlay.classList.add('fading');
+  fadeOutAudio(video, 500, () => {
+    video.pause();
+    doFinishStory();
+  });
 }
 
-function finishVideo() {
+function doFinishStory() {
   if (!videoPlaying) return;
   videoPlaying = false;
 
   const overlay = document.getElementById('videoOverlay');
   const video = document.getElementById('storyVideo');
 
-  // イベントハンドラを先にクリア
-  video.onended = null;
-  video.onerror = null;
-
-  // フェードアウト
+  resetVideoState();
   overlay.classList.remove('show');
 
   setTimeout(() => {
@@ -1507,7 +1579,7 @@ function finishVideo() {
     video.removeAttribute('src');
     showScreen('storyScreen');
     renderStory();
-  }, 500);
+  }, 600);
 }
 
 function renderStory() {
