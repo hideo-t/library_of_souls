@@ -1317,11 +1317,14 @@ function doFinishIntro() {
   const video = document.getElementById('storyVideo');
   const skipBtn = document.getElementById('videoSkipBtn');
 
-  resetVideo();
+  clearTimers();
+  video.onended = null;
+  video.onerror = null;
+  video.pause();          // 先にpause
+  setGain(1);             // pause後にgainリセット
   overlay.classList.remove('show');
 
   setTimeout(() => {
-    video.pause();
     video.removeAttribute('src');
     cleanupOverlay();
     skipBtn.onclick = () => {
@@ -1577,11 +1580,14 @@ function doFinishStory() {
   const overlay = document.getElementById('videoOverlay');
   const video = document.getElementById('storyVideo');
 
-  resetVideo();
+  clearTimers();
+  video.onended = null;
+  video.onerror = null;
+  video.pause();          // 先にpause
+  setGain(1);             // pause後にgainリセット
   overlay.classList.remove('show');
 
   setTimeout(() => {
-    video.pause();
     video.removeAttribute('src');
     cleanupOverlay();
     showScreen('storyScreen');
