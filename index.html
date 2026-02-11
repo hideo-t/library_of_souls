@@ -1313,6 +1313,7 @@ function startDiagnosis() {
 }
 
 function playStoryVideo() {
+  videoPlaying = true;
   const story = STORIES[currentStory];
   const videoSrc = storyVideoPath(story.number);
   const overlay = document.getElementById('videoOverlay');
@@ -1355,23 +1356,33 @@ function playStoryVideo() {
   };
 }
 
+let videoPlaying = false;
+
 function skipVideo() {
   const video = document.getElementById('storyVideo');
   video.pause();
   video.onended = null;
+  video.onerror = null;
   finishVideo();
 }
 
 function finishVideo() {
+  if (!videoPlaying) return;
+  videoPlaying = false;
+
   const overlay = document.getElementById('videoOverlay');
   const video = document.getElementById('storyVideo');
+
+  // イベントハンドラを先にクリア
+  video.onended = null;
+  video.onerror = null;
 
   // フェードアウト
   overlay.classList.remove('show');
 
   setTimeout(() => {
-    video.src = '';
-    video.load();
+    video.pause();
+    video.removeAttribute('src');
     showScreen('storyScreen');
     renderStory();
   }, 500);
