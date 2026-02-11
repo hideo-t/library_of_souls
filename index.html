@@ -1014,7 +1014,7 @@ html, body {
 <div class="book-world" id="app">
 
   <!-- COVER SCREEN -->
-  <div class="screen cover-screen active" id="coverScreen">
+  <div class="screen cover-screen" id="coverScreen">
     <div class="book-cover" onclick="openBook()">
       <div class="cover-ornament"></div>
       <div class="cover-content">
@@ -1122,6 +1122,69 @@ function badgePath(primary, secondary, size) {
 
 function storyVideoPath(num) {
   return `assets/illustrations/movie/st${String(num).padStart(2,'0')}.mp4`;
+}
+
+// ===== INTRO VIDEO (st00) =====
+function playIntroVideo() {
+  videoPlaying = true;
+  const overlay = document.getElementById('videoOverlay');
+  const video = document.getElementById('storyVideo');
+  const label = document.getElementById('videoChapterLabel');
+  const skipBtn = document.getElementById('videoSkipBtn');
+
+  label.textContent = '';
+  label.style.opacity = '0';
+  skipBtn.style.display = 'block';
+
+  video.src = storyVideoPath(0);
+  video.currentTime = 0;
+  video.muted = false;
+
+  overlay.classList.add('show');
+
+  video.play().catch(() => {
+    video.muted = true;
+    video.play().catch(() => {
+      finishIntroVideo();
+    });
+  });
+
+  video.onended = () => { finishIntroVideo(); };
+  video.onerror = () => { finishIntroVideo(); };
+
+  // スキップボタンを一時的にイントロ用に差し替え
+  skipBtn.onclick = () => { skipIntroVideo(); };
+}
+
+function skipIntroVideo() {
+  const video = document.getElementById('storyVideo');
+  video.pause();
+  video.onended = null;
+  video.onerror = null;
+  finishIntroVideo();
+}
+
+function finishIntroVideo() {
+  if (!videoPlaying) return;
+  videoPlaying = false;
+
+  const overlay = document.getElementById('videoOverlay');
+  const video = document.getElementById('storyVideo');
+  const skipBtn = document.getElementById('videoSkipBtn');
+
+  video.onended = null;
+  video.onerror = null;
+
+  overlay.classList.remove('show');
+
+  setTimeout(() => {
+    video.pause();
+    video.removeAttribute('src');
+    // スキップボタンを通常に戻す
+    skipBtn.onclick = () => { skipVideo(); };
+    // 表紙を表示
+    showScreen('coverScreen');
+  }, 500);
 }
 
 // ===== DATA =====
@@ -1638,6 +1701,9 @@ function restart() {
     cover.style.animation = 'bookFloat 4s ease-in-out infinite';
   }, 50);
 }
+
+// ===== 初期化: st00再生 → 表紙表示 =====
+playIntroVideo();
 </script>
 
 </body>
