@@ -1320,8 +1320,8 @@ function doFinishIntro() {
   clearTimers();
   video.onended = null;
   video.onerror = null;
-  video.pause();          // 先にpause
-  setGain(1);             // pause後にgainリセット
+  video.pause();
+  // gainは0のまま残す（リセットは次の再生開始時）
   overlay.classList.remove('show');
 
   setTimeout(() => {
@@ -1583,8 +1583,8 @@ function doFinishStory() {
   clearTimers();
   video.onended = null;
   video.onerror = null;
-  video.pause();          // 先にpause
-  setGain(1);             // pause後にgainリセット
+  video.pause();
+  // gainは0のまま残す（リセットは次の再生開始時）
   overlay.classList.remove('show');
 
   setTimeout(() => {
